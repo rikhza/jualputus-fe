@@ -58,33 +58,14 @@ export default defineConfig({
 		},
 		// Increase chunk size warning limit
 		chunkSizeWarningLimit: 1000,
-		// Enable minification with terser
-		minify: "terser",
-		terserOptions: {
-			compress: {
-				drop_console: true,
-				drop_debugger: true,
-				pure_funcs: [
-					"console.log",
-					"console.info",
-					"console.debug",
-					"console.trace",
-				],
-				passes: 2,
-			},
-			mangle: {
-				safari10: true,
-			},
-			format: {
-				comments: false,
-			},
-		},
+		// Enable minification with esbuild (faster, built-in)
+		minify: "esbuild",
 		// CSS code splitting
 		cssCodeSplit: true,
 		// Report compressed size
 		reportCompressedSize: true,
-		// Smaller CSS output
-		cssMinify: "lightningcss",
+		// CSS minification (default esbuild is fast enough)
+		cssMinify: true,
 	},
 	server: {
 		// Enable HMR
