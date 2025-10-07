@@ -1,0 +1,31 @@
+# Bun configuration file
+
+[install]
+# Use exact versions for reproducible installs
+exact = true
+
+# Use cache for faster installs
+cache = true
+
+# Production mode settings
+production = false
+
+# Auto-install peer dependencies
+auto = true
+
+[install.scopes]
+# Configure scoped registries if needed
+
+[dev]
+# Enable hot reload
+hot = true
+
+[run]
+# Run scripts with bun instead of node
+bun = true
+
+[test]
+# Test configuration
+coverage = true
+preload = []
+
