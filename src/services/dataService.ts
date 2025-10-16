@@ -1,5 +1,4 @@
-import { Brand, Model, Submission, Category } from "../types";
-import { mockBrands, mockModels } from "../data/mockData";
+import { Submission } from "../types";
 
 // In-memory storage for submissions (simulating JSON storage)
 let submissions: Submission[] = [];
@@ -30,40 +29,6 @@ const saveSubmissions = (): void => {
 
 // Initialize on module load
 loadSubmissions();
-
-/**
- * Get all brands
- */
-export const getBrands = (category?: Category): Brand[] => {
-	if (category) {
-		return mockBrands.filter((brand) => brand.category === category);
-	}
-	return mockBrands;
-};
-
-/**
- * Get brand by ID
- */
-export const getBrandById = (id: string): Brand | undefined => {
-	return mockBrands.find((brand) => brand.id === id);
-};
-
-/**
- * Get all models
- */
-export const getModels = (brandId?: string): Model[] => {
-	if (brandId) {
-		return mockModels.filter((model) => model.brand_id === brandId);
-	}
-	return mockModels;
-};
-
-/**
- * Get model by ID
- */
-export const getModelById = (id: string): Model | undefined => {
-	return mockModels.find((model) => model.id === id);
-};
 
 /**
  * Generate a unique ticket number

@@ -7,21 +7,21 @@ export function Keamanan() {
 	const features = [
 		{
 			icon: ShieldCheck,
-			title: "Verifikasi IMEI/Serial",
+			title: "Amanah",
 			description:
-				"Setiap perangkat diverifikasi keasliannya untuk memastikan transaksi aman",
+				"Kami memberikan penawaran harga tinggi yang sesuai dengan kondisi perangkat",
 		},
 		{
 			icon: Eraser,
-			title: "Penghapusan Data Aman",
+			title: "Penghapusan Data",
 			description:
-				"Kami berikan panduan lengkap untuk menghapus data pribadi Anda dengan aman",
+				"Kami menjamin data pada perangkat yang telah dijual terhapus dengan aman",
 		},
 		{
 			icon: Clock,
-			title: "Proses 24-48 Jam",
+			title: "Proses 30 Menit",
 			description:
-				"Tim kami akan menghubungi Anda dalam waktu maksimal 48 jam kerja",
+				"Tim kami akan menghubungi Anda secepatnya setelah isi form",
 		},
 		{
 			icon: CreditCard,

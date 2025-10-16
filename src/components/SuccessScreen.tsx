@@ -1,4 +1,4 @@
-import { CheckCircle2, MessageCircle, Home } from "lucide-react";
+import { CheckCircle2, Home } from "lucide-react";
 import { Button } from "./ui/Button";
 
 interface SuccessScreenProps {
@@ -7,12 +7,6 @@ interface SuccessScreenProps {
 }
 
 export function SuccessScreen({ ticketNumber, onClose }: SuccessScreenProps) {
-	const whatsappNumber = "6281234567890";
-	const message = `Halo, saya ingin menanyakan status pengajuan saya dengan nomor tiket: ${ticketNumber}`;
-	const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
-		message
-	)}`;
-
 	return (
 		<div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-sm">
 			<div className="min-h-screen px-4 py-8 flex items-center justify-center">
@@ -42,13 +36,6 @@ export function SuccessScreen({ ticketNumber, onClose }: SuccessScreenProps) {
 					</div>
 
 					<div className="space-y-3">
-						<Button
-							onClick={() => window.open(whatsappUrl, "_blank")}
-							className="w-full"
-						>
-							<MessageCircle className="w-5 h-5 mr-2" />
-							Chat Admin via WhatsApp
-						</Button>
 						<Button
 							onClick={onClose}
 							variant="outline"

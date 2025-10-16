@@ -48,7 +48,7 @@ export function CaraKerja() {
 						Cara Kerja
 					</h2>
 					<p className="text-lg text-slate-600 max-w-2xl mx-auto">
-						Proses jual gadget Anda dalam 4 langkah mudah
+						Proses Jual Dengan Mudah dalam 4 Langkah
 					</p>
 				</div>
 

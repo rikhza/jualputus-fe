@@ -48,7 +48,7 @@ export function Hero({ onJualClick, onLearnClick }: HeroProps) {
 						>
 							<Sparkles className="w-4 h-4 text-emerald-600 animate-pulse" />
 							<span className="text-sm font-semibold text-emerald-700">
-								Terpercaya • Aman • Cepat
+								Terpercaya • Mudah • Cepat
 							</span>
 						</div>
 
@@ -109,8 +109,8 @@ export function Hero({ onJualClick, onLearnClick }: HeroProps) {
 									: "opacity-0 translate-y-4"
 							}`}
 						>
-							HP flagship, laptop gaming & PC 2020+ diterima.
-							Proses 24-48 jam, harga terbaik dijamin!
+							HP Android Iphone, semua merek laptop 2020, Proses
+							Cepat 30menit, Penawaran Harga Tertinggi!
 						</p>
 
 						{/* CTA Section - Most Important */}
@@ -155,12 +155,12 @@ export function Hero({ onJualClick, onLearnClick }: HeroProps) {
 							{[
 								{
 									icon: Shield,
-									text: "100% Aman",
+									text: "Amanah",
 									color: "emerald",
 								},
 								{
 									icon: Zap,
-									text: "Proses 24-48 Jam",
+									text: "Proses Cepat",
 									color: "amber",
 								},
 								{

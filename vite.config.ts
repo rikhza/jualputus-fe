@@ -89,4 +89,8 @@ export default defineConfig({
 				? ["console", "debugger"]
 				: [],
 	},
+	// Performance optimizations
+	define: {
+		__DEV__: process.env.NODE_ENV !== "production",
+	},
 });

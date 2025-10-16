@@ -1,14 +1,14 @@
 import { Smartphone, Laptop, Monitor } from "lucide-react";
 import { RadioCard } from "../ui/RadioCard";
 import { Select } from "../ui/Select";
+import { Input } from "../ui/Input";
 import { FormData, FormErrors, Category } from "../../types";
-import { getBrands, getModels } from "../../services/dataService";
 import { useMemo, memo } from "react";
 
 interface Step1ProductProps {
 	formData: FormData;
 	errors: FormErrors;
-	onChange: (field: keyof FormData, value: any) => void;
+	onChange: <K extends keyof FormData>(field: K, value: FormData[K]) => void;
 }
 
 export const Step1Product = memo(function Step1Product({
@@ -16,16 +16,6 @@ export const Step1Product = memo(function Step1Product({
 	errors,
 	onChange,
 }: Step1ProductProps) {
-	const filteredBrands = useMemo(() => {
-		if (!formData.category) return [];
-		return getBrands(formData.category);
-	}, [formData.category]);
-
-	const filteredModels = useMemo(() => {
-		if (!formData.brand_id) return [];
-		return getModels(formData.brand_id);
-	}, [formData.brand_id]);
-
 	const yearOptions = useMemo(() => {
 		const currentYear = new Date().getFullYear();
 		const years = [];
@@ -37,17 +27,39 @@ export const Step1Product = memo(function Step1Product({
 
 	const handleCategoryChange = (category: Category) => {
 		onChange("category", category);
-		onChange("brand_id", "");
-		onChange("model_id", "");
-	};
-
-	const handleBrandChange = (brandId: string) => {
-		onChange("brand_id", brandId);
-		onChange("model_id", "");
+		onChange("brand", "");
+		onChange("model", "");
 	};
 
 	const showYearWarning =
 		formData.year_released !== "" && Number(formData.year_released) < 2020;
+
+	// Get placeholder examples based on category
+	const getBrandPlaceholder = () => {
+		switch (formData.category) {
+			case "hp_flagship":
+				return "Contoh: iPhone, Samsung, Xiaomi, OPPO";
+			case "laptop":
+				return "Contoh: ASUS, Lenovo, MacBook, MSI";
+			case "komputer":
+				return "Contoh: Dell, HP, ASUS, Custom Build";
+			default:
+				return "Masukkan merek perangkat";
+		}
+	};
+
+	const getModelPlaceholder = () => {
+		switch (formData.category) {
+			case "hp_flagship":
+				return "Contoh: iPhone 15 Pro, Galaxy S24 Ultra";
+			case "laptop":
+				return "Contoh: ROG Zephyrus G14, ThinkPad X1";
+			case "komputer":
+				return "Contoh: OptiPlex 7010, Custom Gaming PC";
+			default:
+				return "Masukkan model/tipe perangkat";
+		}
+	};
 
 	return (
 		<div className="space-y-6">
@@ -61,8 +73,7 @@ export const Step1Product = memo(function Step1Product({
 						value="hp_flagship"
 						checked={formData.category === "hp_flagship"}
 						onChange={() => handleCategoryChange("hp_flagship")}
-						label="HP Flagship"
-						description="iPhone, Samsung, Xiaomi"
+						label="HP Android & iPhone"
 						icon={<Smartphone className="w-5 h-5" />}
 					/>
 					<RadioCard
@@ -71,7 +82,6 @@ export const Step1Product = memo(function Step1Product({
 						checked={formData.category === "laptop"}
 						onChange={() => handleCategoryChange("laptop")}
 						label="Laptop"
-						description="ASUS, Lenovo, MSI"
 						icon={<Laptop className="w-5 h-5" />}
 					/>
 					<RadioCard
@@ -80,7 +90,6 @@ export const Step1Product = memo(function Step1Product({
 						checked={formData.category === "komputer"}
 						onChange={() => handleCategoryChange("komputer")}
 						label="Komputer"
-						description="PC Desktop"
 						icon={<Monitor className="w-5 h-5" />}
 					/>
 				</div>
@@ -93,39 +102,27 @@ export const Step1Product = memo(function Step1Product({
 
 			{formData.category && (
 				<>
-					<Select
+					<Input
 						label="Merek"
 						required
-						value={formData.brand_id}
-						onChange={(e) => handleBrandChange(e.target.value)}
-						options={[
-							{ value: "", label: "Pilih merek" },
-							...filteredBrands.map((b) => ({
-								value: b.id,
-								label: b.name,
-							})),
-						]}
-						error={errors.brand_id}
+						type="text"
+						placeholder={getBrandPlaceholder()}
+						value={formData.brand}
+						onChange={(e) => onChange("brand", e.target.value)}
+						error={errors.brand}
+						helpText="Masukkan merek perangkat Anda"
 					/>
 
-					{formData.brand_id && (
-						<Select
-							label="Model"
-							required
-							value={formData.model_id}
-							onChange={(e) =>
-								onChange("model_id", e.target.value)
-							}
-							options={[
-								{ value: "", label: "Pilih model" },
-								...filteredModels.map((m) => ({
-									value: m.id,
-									label: m.name,
-								})),
-							]}
-							error={errors.model_id}
-						/>
-					)}
+					<Input
+						label="Model / Tipe"
+						required
+						type="text"
+						placeholder={getModelPlaceholder()}
+						value={formData.model}
+						onChange={(e) => onChange("model", e.target.value)}
+						error={errors.model}
+						helpText="Masukkan model atau tipe perangkat Anda"
+					/>
 
 					<Select
 						label="Tahun Rilis"

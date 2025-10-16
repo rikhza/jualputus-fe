@@ -8,7 +8,7 @@ import { functionalFeatures, accessoriesList } from "../../data/mockData";
 interface Step2ConditionProps {
 	formData: FormData;
 	errors: FormErrors;
-	onChange: (field: keyof FormData, value: any) => void;
+	onChange: <K extends keyof FormData>(field: K, value: FormData[K]) => void;
 }
 
 export function Step2Condition({

@@ -17,8 +17,8 @@ interface SellFormProps {
 
 const initialFormData: FormData = {
 	category: "",
-	brand_id: "",
-	model_id: "",
+	brand: "",
+	model: "",
 	year_released: "",
 	physical_condition: "",
 	functional_features: [],
@@ -41,7 +41,10 @@ export function SellForm({ isOpen, onClose, onSuccess }: SellFormProps) {
 
 	const steps = ["Pilih Barang", "Kondisi & Foto", "Kontak", "Review"];
 
-	const handleChange = (field: keyof FormData, value: any) => {
+	const handleChange = <K extends keyof FormData>(
+		field: K,
+		value: FormData[K]
+	) => {
 		setFormData((prev) => ({ ...prev, [field]: value }));
 		if (errors[field as keyof FormErrors]) {
 			setErrors((prev) => ({ ...prev, [field]: undefined }));
@@ -54,11 +57,11 @@ export function SellForm({ isOpen, onClose, onSuccess }: SellFormProps) {
 		if (!formData.category) {
 			newErrors.category = "Pilih kategori perangkat";
 		}
-		if (!formData.brand_id) {
-			newErrors.brand_id = "Pilih merek perangkat";
+		if (!formData.brand.trim()) {
+			newErrors.brand = "Masukkan merek perangkat";
 		}
-		if (!formData.model_id) {
-			newErrors.model_id = "Pilih model perangkat";
+		if (!formData.model.trim()) {
+			newErrors.model = "Masukkan model perangkat";
 		}
 		if (!formData.year_released) {
 			newErrors.year_released = "Pilih tahun rilis";
@@ -77,8 +80,8 @@ export function SellForm({ isOpen, onClose, onSuccess }: SellFormProps) {
 		if (!formData.physical_condition) {
 			newErrors.physical_condition = "Pilih kondisi fisik perangkat";
 		}
-		if (formData.photos.length < 4) {
-			newErrors.photos = "Upload minimal 4 foto perangkat";
+		if (formData.photos.length < 1) {
+			newErrors.photos = "Upload minimal 1 foto perangkat";
 		}
 
 		setErrors(newErrors);
@@ -97,13 +100,6 @@ export function SellForm({ isOpen, onClose, onSuccess }: SellFormProps) {
 			newErrors.whatsapp = "Nomor WhatsApp wajib diisi";
 		} else if (whatsappNumbers.length < 10) {
 			newErrors.whatsapp = "Nomor WhatsApp tidak valid";
-		}
-
-		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-		if (!formData.email.trim()) {
-			newErrors.email = "Email wajib diisi";
-		} else if (!emailRegex.test(formData.email)) {
-			newErrors.email = "Format email tidak valid";
 		}
 
 		if (!formData.full_address.trim()) {
@@ -143,17 +139,24 @@ export function SellForm({ isOpen, onClose, onSuccess }: SellFormProps) {
 		try {
 			// Prepare submission data
 			const submissionData = {
-				category: formData.category as any,
-				brand_id: formData.brand_id,
-				model_id: formData.model_id,
+				category: formData.category as
+					| "hp_flagship"
+					| "laptop"
+					| "komputer",
+				brand: formData.brand,
+				model: formData.model,
 				year_released: Number(formData.year_released),
-				physical_condition: formData.physical_condition as any,
+				physical_condition: formData.physical_condition as
+					| "mulus"
+					| "normal"
+					| "ada_dent"
+					| "pecah",
 				functional_features: formData.functional_features,
 				accessories: formData.accessories,
 				photos: formData.photoUrls, // Store URLs instead of File objects
 				full_name: formData.full_name,
 				whatsapp: formData.whatsapp.replace(/\D/g, ""),
-				email: formData.email,
+				email: formData.email || undefined,
 				full_address: formData.full_address,
 				location_lat: formData.location_lat ?? undefined,
 				location_lng: formData.location_lng ?? undefined,
