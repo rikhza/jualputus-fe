@@ -82,8 +82,8 @@ export function Step2Condition({
 			const currentPhotos = formData.photos;
 			const currentUrls = formData.photoUrls;
 
-			if (currentPhotos.length + imageFiles.length > 8) {
-				alert("Maksimal 8 foto");
+			if (currentPhotos.length + imageFiles.length > 2) {
+				alert("Maksimal 2 foto saja");
 				return;
 			}
 
@@ -227,36 +227,54 @@ export function Step2Condition({
 					Foto Perangkat <span className="text-red-500">*</span>
 				</label>
 				<p className="text-sm text-slate-600 mb-4">
-					Upload minimal 4 foto (depan, belakang, samping, layar
-					menyala). Maksimal 8 foto.
+					Upload minimal 1 foto perangkat. Maksimal 2 foto saja.
 				</p>
 
 				<div
 					className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-colors duration-150 ${
-						dragActive
+						dragActive && formData.photos.length < 2
 							? "border-emerald-500 bg-emerald-50"
+							: formData.photos.length >= 2
+							? "border-slate-200 bg-slate-50"
 							: "border-slate-300 hover:border-emerald-400"
 					}`}
-					onDragEnter={handleDrag}
-					onDragLeave={handleDrag}
-					onDragOver={handleDrag}
-					onDrop={handleDrop}
+					onDragEnter={
+						formData.photos.length < 2 ? handleDrag : undefined
+					}
+					onDragLeave={
+						formData.photos.length < 2 ? handleDrag : undefined
+					}
+					onDragOver={
+						formData.photos.length < 2 ? handleDrag : undefined
+					}
+					onDrop={formData.photos.length < 2 ? handleDrop : undefined}
 				>
 					<input
 						type="file"
 						id="photo-upload"
 						className="hidden"
 						accept="image/*"
-						multiple
+						multiple={formData.photos.length < 2}
 						onChange={(e) => handleFiles(e.target.files)}
+						disabled={formData.photos.length >= 2}
 					/>
-					<label htmlFor="photo-upload" className="cursor-pointer">
+					<label
+						htmlFor="photo-upload"
+						className={
+							formData.photos.length >= 2
+								? "cursor-not-allowed"
+								: "cursor-pointer"
+						}
+					>
 						<Upload className="w-12 h-12 text-slate-400 mx-auto mb-4" />
 						<p className="text-slate-700 font-medium mb-1">
-							Klik untuk upload atau drag & drop
+							{formData.photos.length >= 2
+								? "Maksimal 2 foto tercapai"
+								: "Klik untuk upload atau drag & drop"}
 						</p>
 						<p className="text-sm text-slate-500">
-							PNG, JPG hingga 10MB per file
+							PNG, JPG hingga 10MB per file •{" "}
+							{2 - formData.photos.length} foto tersisa
 						</p>
 					</label>
 				</div>

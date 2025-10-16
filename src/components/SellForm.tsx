@@ -8,6 +8,10 @@ import { Step3Contact } from "./form/Step3Contact";
 import { Step4Review } from "./form/Step4Review";
 import { FormData, FormErrors } from "../types";
 import { createSubmission } from "../services/dataService";
+import {
+	sendSubmissionToWhatsApp,
+	isWhatsAppConfigured,
+} from "../services/whatsappService";
 
 interface SellFormProps {
 	isOpen: boolean;
@@ -82,6 +86,9 @@ export function SellForm({ isOpen, onClose, onSuccess }: SellFormProps) {
 		}
 		if (formData.photos.length < 1) {
 			newErrors.photos = "Upload minimal 1 foto perangkat";
+		}
+		if (formData.photos.length > 2) {
+			newErrors.photos = "Maksimal 2 foto saja";
 		}
 
 		setErrors(newErrors);
@@ -162,17 +169,50 @@ export function SellForm({ isOpen, onClose, onSuccess }: SellFormProps) {
 				location_lng: formData.location_lng ?? undefined,
 			};
 
+			// Save to localStorage first
 			const result = await createSubmission(submissionData);
-
 			console.log("Form submitted successfully:", result);
 
+			// Get full submission with ticket number for WhatsApp
+			const fullSubmission = {
+				...submissionData,
+				id: result.id,
+				ticket_number: result.ticket_number,
+				status: "pending" as const,
+				created_at: new Date().toISOString(),
+			};
+
+			// Send to WhatsApp if configured
+			if (isWhatsAppConfigured()) {
+				try {
+					console.log("Sending submission to WhatsApp admin...");
+					// Pass actual File objects for photo upload
+					await sendSubmissionToWhatsApp(
+						fullSubmission,
+						formData.photos
+					);
+					console.log("Successfully sent to WhatsApp admin!");
+				} catch (whatsappError) {
+					console.error("WhatsApp send error:", whatsappError);
+					// Don't fail the submission if WhatsApp fails
+					// Just log the error
+				}
+			} else {
+				console.warn(
+					"WhatsApp service not configured. Skipping WhatsApp notification."
+				);
+			}
+
+			// Show success screen
 			onSuccess(result.ticket_number);
 			setFormData(initialFormData);
 			setCurrentStep(1);
 			setErrors({});
 		} catch (error) {
 			console.error("Submission error:", error);
-			alert("Ups, koneksi kurang stabil. Coba lagi ya.");
+			alert(
+				"Ups, terjadi kesalahan saat mengirim data. Silakan coba lagi."
+			);
 		} finally {
 			setIsSubmitting(false);
 		}

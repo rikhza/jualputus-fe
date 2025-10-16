@@ -11,6 +11,10 @@
 # Install dependencies
 bun install
 
+# Setup environment variables (WhatsApp API)
+cp .env.example .env
+# Edit .env with your Fonnte token and admin WhatsApp number
+
 # Start development server (ALWAYS use this during agent sessions)
 bun run dev
 # → http://localhost:3000
@@ -37,11 +41,12 @@ bun run build
 **Key Features**:
 
 -   4-step form wizard (Product → Condition → Contact → Review)
--   JSON-based local storage (no database required)
 -   Real-time validation and error handling
--   Photo upload with preview
+-   Photo upload with preview (max 2 photos)
 -   Responsive mobile-first design
--   Ticket generation system
+-   Ticket generation system (format: JP-DDMMHHMMSS, timestamp-based for uniqueness)
+-   WhatsApp integration via Fonnte API (send form data & photos to admin)
+-   No local storage - data sent directly to WhatsApp
 
 **Runtime**: Bun (fast all-in-one JavaScript runtime)  
 **Framework**: React 18 + TypeScript + Vite  
@@ -55,14 +60,14 @@ bun run build
 ### Data Flow
 
 ```
-Components → Services → Mock Data → localStorage
-     ↑                                      ↓
-     └──────── State Management ───────────┘
+Components → Services → WhatsApp API (Fonnte)
+     ↑
+     └──── State Management ───
 ```
 
 ### Key Principles
 
-1. **No Database**: Uses `localStorage` with JSON serialization
+1. **No Database/Storage**: Data sent directly to WhatsApp, not stored locally
 2. **Service Layer Pattern**: All data operations through `src/services/dataService.ts`
 3. **Type-Safe**: Comprehensive TypeScript types in `src/types/index.ts`
 4. **Component Memoization**: Performance-critical components use `React.memo`
@@ -92,10 +97,12 @@ src/
 │   │   └── Textarea.tsx          # Multi-line text input
 │   ├── SellForm.tsx     # Main form orchestrator (state management)
 │   ├── SuccessScreen.tsx # Success modal after submission
+│   ├── FloatingCTA.tsx  # Mobile sticky button
 │   └── [Landing pages]  # Hero, FAQ, Features, etc.
 │
 ├── services/            # Business logic layer
-│   └── dataService.ts   # All CRUD operations (getBrands, createSubmission, etc.)
+│   ├── dataService.ts   # All CRUD operations (localStorage)
+│   └── whatsappService.ts # WhatsApp API integration (Fonnte)
 │
 ├── data/               # Static data
 │   └── mockData.ts     # Brands, models, features, accessories
@@ -153,11 +160,9 @@ docs/                   # Architecture documentation
     -   Validation logic for each step
     -   Submission handler
 -   `src/services/dataService.ts` - **CRITICAL**: Data operations
-    -   `getBrands(category)` - Get brands by category
-    -   `getModels(brandId)` - Get models by brand
-    -   `createSubmission(data)` - Save submission to localStorage
-    -   `getAllSubmissions()` - Retrieve all submissions
-    -   Auto-generates ticket numbers (format: `JP20250107-1234`)
+    -   `createSubmission(data)` - Generate ticket number and ID
+    -   Auto-generates ticket numbers (format: `JP-DDMMHHMMSS`, timestamp-based, unique & memorable)
+    -   No local storage - data sent via WhatsApp service
 
 ### Type Definitions
 
@@ -328,56 +333,64 @@ test.describe("Feature Name", () => {
 
 ## Data Management
 
-### Storage System
+### Submission Flow
 
--   **Storage**: Browser `localStorage`
--   **Key**: `jualputus_submissions`
--   **Format**: JSON array of submissions
--   **Limit**: ~5-10MB (sufficient for 10K+ submissions)
+-   **No Storage**: Data tidak disimpan di localStorage/browser
+-   **Direct to WhatsApp**: Form data langsung dikirim ke admin WhatsApp via Fonnte API
+-   **Ticket Number**: Timestamp-based, globally unique, collision-resistant
+
+### Ticket Number System
+
+**Format**: `JP-DDMMHHMMSS` (timestamp-based)
+
+**Why Timestamp-Based?**
+
+-   ✅ **Globally Unique**: Tidak ada duplicate antar users (centralized time-based)
+-   ✅ **No Counter Needed**: Tidak perlu sync counter di localStorage
+-   ✅ **Collision-Resistant**: Auto-append random 2-digit jika submit di detik sama
+-   ✅ **Sortable**: Otomatis terurut berdasarkan waktu submit
+-   ✅ **Trackable**: Admin langsung tau kapan customer submit
+-   ✅ **Memorable**: Format pendek, mudah dicatat customer
+
+**Examples**:
+
+```
+JP-1701143045 = 17 January, 14:30:45
+JP-2512095530 = 25 December, 09:55:30
+JP-0103120015 = 01 March, 12:00:15
+```
+
+**Collision Handling**:
+Jika 2 user submit di detik yang sama, otomatis append random 2-digit:
+
+```
+JP-170114304537  (dengan suffix 37)
+```
 
 ### Available Operations
 
 ```typescript
-// Brands & Models (read-only)
-getBrands(category?: Category): Brand[]
-getBrandById(id: string): Brand | undefined
-getModels(brandId?: string): Model[]
-getModelById(id: string): Model | undefined
-
-// Submissions (CRUD)
+// Submission
 createSubmission(data): Promise<{ id, ticket_number }>
-getSubmissionById(id): Submission | undefined
-getSubmissionByTicket(ticketNumber): Submission | undefined
-getAllSubmissions(): Submission[]
-updateSubmissionStatus(id, status): Submission | null
-deleteSubmission(id): boolean
-
-// Utility
-clearAllSubmissions(): void
-exportSubmissionsToJSON(): string
-importSubmissionsFromJSON(json): boolean
+// Returns unique ID and timestamp-based ticket number
+// Data is sent to WhatsApp, not stored locally
 ```
 
 ### Data Flow Example
 
 ```typescript
-// 1. User selects category
-const brands = getBrands("laptop"); // Get ASUS, Lenovo, MSI, etc.
-
-// 2. User selects brand
-const models = getModels("8"); // Get ASUS models
-
-// 3. Form submission
+// 1. Form submission
 const result = await createSubmission({
 	category: "laptop",
-	brand_id: "8",
-	model_id: "25",
+	brand: "ASUS",
+	model: "ROG Zephyrus G14",
 	year_released: 2024,
+	physical_condition: "mulus",
 	// ... other fields
 });
 
-// 4. Show success with ticket
-console.log(result.ticket_number); // "JP20250107-1234"
+// 2. Show success with ticket
+console.log(result.ticket_number); // "JP-1701143045" (17 Jan, 14:30:45)
 ```
 
 ---
@@ -451,20 +464,27 @@ console.log("Total submissions:", getAllSubmissions().length);
 
 ## Environment Variables
 
-Create `.env` file (optional):
+Create `.env` file (REQUIRED for WhatsApp integration):
 
 ```bash
+# WhatsApp API (Fonnte) - REQUIRED
+VITE_FONNTE_TOKEN=your_fonnte_token_here
+VITE_ADMIN_WA=628123456789
+
 # Application
 VITE_APP_NAME=JualPutus
 VITE_APP_VERSION=1.0.0
-
-# Feature Flags
-VITE_ENABLE_DEBUG=false
-VITE_ENABLE_ANALYTICS=false
-
-# Future API (when backend added)
-# VITE_API_URL=http://localhost:3000/api
 ```
+
+**Setup WhatsApp Integration:**
+
+1. Get token from [Fonnte.com](https://fonnte.com)
+2. Create `.env` file:
+    ```bash
+    VITE_FONNTE_TOKEN=your_token_here
+    VITE_ADMIN_WA=628123456789
+    ```
+3. Restart dev server: `bun run dev`
 
 ---
 
@@ -510,12 +530,16 @@ const result = await createSubmission({
 	location_lng: 106.816666,
 });
 
-// Returns: { id: 'sub_...', ticket_number: 'JP20250107-1234' }
+// Returns: { id: 'sub_...', ticket_number: 'JP-1701143045' }
 ```
 
 ---
 
 ## Deployment
+
+### Before Deploy
+
+No cleanup needed! Data tidak disimpan di localStorage, jadi tidak ada data testing yang perlu dihapus.
 
 ### Build for Production
 

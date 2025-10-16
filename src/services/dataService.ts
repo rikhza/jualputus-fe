@@ -1,169 +1,67 @@
 import { Submission } from "../types";
 
-// In-memory storage for submissions (simulating JSON storage)
-let submissions: Submission[] = [];
-
-// Local storage key for persistence
-const STORAGE_KEY = "jualputus_submissions";
-
-// Load submissions from localStorage on initialization
-const loadSubmissions = (): void => {
-	try {
-		const stored = localStorage.getItem(STORAGE_KEY);
-		if (stored) {
-			submissions = JSON.parse(stored);
-		}
-	} catch (error) {
-		console.error("Error loading submissions:", error);
-	}
-};
-
-// Save submissions to localStorage
-const saveSubmissions = (): void => {
-	try {
-		localStorage.setItem(STORAGE_KEY, JSON.stringify(submissions));
-	} catch (error) {
-		console.error("Error saving submissions:", error);
-	}
-};
-
-// Initialize on module load
-loadSubmissions();
-
 /**
- * Generate a unique ticket number
+ * Generate a unique memorable ticket number
+ * Format: JP-DDMMHHMMSS (Date + Time based)
+ * Example: JP-1701143045 = 17 Jan, 14:30:45
+ *
+ * This ensures uniqueness across all users (centralized time-based)
+ * Format: DD = day, MM = month, HHMMSS = hour, minute, second
+ * Readable, sortable, and collision-resistant
  */
 const generateTicketNumber = (): string => {
-	const date = new Date();
-	const dateStr = date.toISOString().slice(0, 10).replace(/-/g, "");
-	const random = Math.floor(Math.random() * 10000)
+	const now = new Date();
+
+	// Get date components
+	const day = now.getDate().toString().padStart(2, "0");
+	const month = (now.getMonth() + 1).toString().padStart(2, "0");
+	const hours = now.getHours().toString().padStart(2, "0");
+	const minutes = now.getMinutes().toString().padStart(2, "0");
+	const seconds = now.getSeconds().toString().padStart(2, "0");
+
+	// Format: JP-DDMMHHMMSS
+	// Example: JP-1701143045 = January 17, 14:30:45
+	const ticket = `JP-${day}${month}${hours}${minutes}${seconds}`;
+
+	// Add random 2-digit suffix for extra collision resistance
+	const random = Math.floor(Math.random() * 100)
 		.toString()
-		.padStart(4, "0");
-	return `JP${dateStr}-${random}`;
+		.padStart(2, "0");
+
+	return `${ticket}${random}`;
 };
 
 /**
  * Create a new submission
+ * Returns ticket number and ID
+ * Data is sent to WhatsApp admin only (not stored locally)
  */
 export const createSubmission = async (
-	data: Omit<
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	_data: Omit<
 		Submission,
 		"id" | "ticket_number" | "status" | "created_at" | "updated_at"
 	>
 ): Promise<{ id: string; ticket_number: string }> => {
 	// Simulate network delay
-	await new Promise((resolve) => setTimeout(resolve, 800));
+	await new Promise((resolve) => setTimeout(resolve, 500));
 
-	const now = new Date().toISOString();
 	const id = `sub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 	const ticket_number = generateTicketNumber();
 
-	const submission: Submission = {
-		...data,
-		id,
-		ticket_number,
-		status: "pending",
-		created_at: now,
-		updated_at: now,
-	};
-
-	submissions.push(submission);
-	saveSubmissions();
+	// Note: Data is sent to WhatsApp via whatsappService, not stored locally
+	// Future backend integration:
+	// const response = await fetch('/api/submissions', {
+	//   method: 'POST',
+	//   body: JSON.stringify(_data)
+	// });
 
 	return { id, ticket_number };
 };
 
-/**
- * Get submission by ID
- */
-export const getSubmissionById = (id: string): Submission | undefined => {
-	return submissions.find((sub) => sub.id === id);
-};
-
-/**
- * Get submission by ticket number
- */
-export const getSubmissionByTicket = (
-	ticketNumber: string
-): Submission | undefined => {
-	return submissions.find((sub) => sub.ticket_number === ticketNumber);
-};
-
-/**
- * Get all submissions
- */
-export const getAllSubmissions = (): Submission[] => {
-	return [...submissions].sort((a, b) => {
-		const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
-		const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
-		return dateB - dateA;
-	});
-};
-
-/**
- * Update submission status
- */
-export const updateSubmissionStatus = (
-	id: string,
-	status: Submission["status"]
-): Submission | null => {
-	const index = submissions.findIndex((sub) => sub.id === id);
-	if (index === -1) return null;
-
-	submissions[index] = {
-		...submissions[index],
-		status,
-		updated_at: new Date().toISOString(),
-	};
-
-	saveSubmissions();
-	return submissions[index];
-};
-
-/**
- * Delete submission
- */
-export const deleteSubmission = (id: string): boolean => {
-	const initialLength = submissions.length;
-	submissions = submissions.filter((sub) => sub.id !== id);
-
-	if (submissions.length < initialLength) {
-		saveSubmissions();
-		return true;
-	}
-
-	return false;
-};
-
-/**
- * Clear all submissions (for testing/development)
- */
-export const clearAllSubmissions = (): void => {
-	submissions = [];
-	localStorage.removeItem(STORAGE_KEY);
-};
-
-/**
- * Export submissions to JSON
- */
-export const exportSubmissionsToJSON = (): string => {
-	return JSON.stringify(submissions, null, 2);
-};
-
-/**
- * Import submissions from JSON
- */
-export const importSubmissionsFromJSON = (jsonString: string): boolean => {
-	try {
-		const imported = JSON.parse(jsonString);
-		if (Array.isArray(imported)) {
-			submissions = imported;
-			saveSubmissions();
-			return true;
-		}
-		return false;
-	} catch (error) {
-		console.error("Error importing submissions:", error);
-		return false;
-	}
-};
+// Future: Add backend API integration here
+// Example:
+// export const getSubmissionById = async (id: string) => {
+//   const response = await fetch(`/api/submissions/${id}`);
+//   return await response.json();
+// };
