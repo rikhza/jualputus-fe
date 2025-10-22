@@ -44,24 +44,10 @@ export function Step3Contact({
 		setIsGettingLocation(true);
 
 		navigator.geolocation.getCurrentPosition(
-			async (position) => {
+			(position) => {
 				const { latitude, longitude } = position.coords;
 				onChange("location_lat", latitude);
 				onChange("location_lng", longitude);
-
-				try {
-					const response = await fetch(
-						`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
-					);
-					const data = await response.json();
-
-					if (data.display_name) {
-						onChange("full_address", data.display_name);
-					}
-				} catch (error) {
-					console.error("Error fetching address:", error);
-				}
-
 				setIsGettingLocation(false);
 			},
 			(error) => {
@@ -114,7 +100,7 @@ export function Step3Contact({
 
 			<div>
 				<label className="block text-sm font-medium text-slate-700 mb-2">
-					Pin Lokasi <span className="text-red-500">*</span>
+					Pin Lokasi (Opsional)
 				</label>
 				<Button
 					type="button"
@@ -124,7 +110,9 @@ export function Step3Contact({
 					className="w-full sm:w-auto"
 				>
 					<Navigation className="w-4 h-4 mr-2" />
-					Gunakan Lokasi Saya
+					{formData.location_lat && formData.location_lng
+						? "Perbarui Lokasi"
+						: "Gunakan Lokasi Saya"}
 				</Button>
 
 				{formData.location_lat && formData.location_lng && (
@@ -139,6 +127,14 @@ export function Step3Contact({
 									Lat: {formData.location_lat.toFixed(6)},
 									Lng: {formData.location_lng.toFixed(6)}
 								</p>
+								<a
+									href={`https://maps.google.com/?q=${formData.location_lat},${formData.location_lng}`}
+									target="_blank"
+									rel="noopener noreferrer"
+									className="text-xs text-emerald-600 hover:text-emerald-800 underline mt-1 inline-block"
+								>
+									Lihat di Google Maps →
+								</a>
 							</div>
 						</div>
 					</div>
@@ -151,7 +147,7 @@ export function Step3Contact({
 				)}
 
 				<p className="mt-2 text-sm text-slate-500">
-					Lokasi akan membantu kami mengatur jadwal pickup yang tepat
+					Pin lokasi membantu kami mengatur jadwal pickup yang tepat
 				</p>
 			</div>
 

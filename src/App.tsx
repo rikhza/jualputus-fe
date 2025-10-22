@@ -1,4 +1,5 @@
 import { useState, lazy, Suspense } from "react";
+import { Routes, Route } from "react-router-dom";
 import { Navbar } from "./components/Navbar";
 import { Hero } from "./components/Hero";
 import { CaraKerja } from "./components/CaraKerja";
@@ -11,6 +12,9 @@ import { FloatingCTA } from "./components/FloatingCTA";
 // Lazy load heavy components that are not immediately visible
 const SellForm = lazy(() => import("./components/SellForm"));
 const SuccessScreen = lazy(() => import("./components/SuccessScreen"));
+const SendPage = lazy(() => import("./components/SendPage"));
+const SuksesPage = lazy(() => import("./components/SuksesPage"));
+const NotFoundPage = lazy(() => import("./components/NotFoundPage"));
 
 function App() {
 	const [isFormOpen, setIsFormOpen] = useState(false);
@@ -50,36 +54,63 @@ function App() {
 	};
 
 	return (
-		<div className="min-h-screen bg-white">
-			<Navbar onJualClick={handleOpenForm} />
-			<Hero
-				onJualClick={handleOpenForm}
-				onLearnClick={scrollToCaraKerja}
-			/>
-			<CaraKerja />
-			<Kategori onSelectCategory={handleSelectCategory} />
-			<Keamanan />
-			<FAQ />
-			<Footer />
-			<FloatingCTA onClick={handleOpenForm} />
+		<Suspense
+			fallback={
+				<div className="min-h-screen bg-white flex items-center justify-center">
+					<div className="text-center">
+						<div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+						<p className="mt-4 text-slate-600">Loading...</p>
+					</div>
+				</div>
+			}
+		>
+			<Routes>
+				{/* Main landing page */}
+				<Route
+					path="/"
+					element={
+						<div className="min-h-screen bg-white">
+							<Navbar onJualClick={handleOpenForm} />
+							<Hero
+								onJualClick={handleOpenForm}
+								onLearnClick={scrollToCaraKerja}
+							/>
+							<CaraKerja />
+							<Kategori onSelectCategory={handleSelectCategory} />
+							<Keamanan />
+							<FAQ />
+							<Footer />
+							<FloatingCTA onClick={handleOpenForm} />
 
-			<Suspense fallback={<div className="sr-only">Loading...</div>}>
-				{isFormOpen && (
-					<SellForm
-						isOpen={isFormOpen}
-						onClose={handleCloseForm}
-						onSuccess={handleFormSuccess}
-					/>
-				)}
+							{isFormOpen && (
+								<SellForm
+									isOpen={isFormOpen}
+									onClose={handleCloseForm}
+									onSuccess={handleFormSuccess}
+								/>
+							)}
 
-				{isSuccessOpen && (
-					<SuccessScreen
-						ticketNumber={ticketNumber}
-						onClose={handleCloseSuccess}
-					/>
-				)}
-			</Suspense>
-		</div>
+							{isSuccessOpen && (
+								<SuccessScreen
+									ticketNumber={ticketNumber}
+									onClose={handleCloseSuccess}
+								/>
+							)}
+						</div>
+					}
+				/>
+
+				{/* Send page - handles WhatsApp API submission */}
+				<Route path="/send/payloadwa" element={<SendPage />} />
+
+				{/* Success page - only accessible from form submission */}
+				<Route path="/sukses" element={<SuksesPage />} />
+
+				{/* 404 Not Found */}
+				<Route path="/404" element={<NotFoundPage />} />
+				<Route path="*" element={<NotFoundPage />} />
+			</Routes>
+		</Suspense>
 	);
 }
 

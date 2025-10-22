@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { X, ArrowLeft } from "lucide-react";
 import { Button } from "./ui/Button";
 import { Progress } from "./ui/Progress";
@@ -8,10 +9,6 @@ import { Step3Contact } from "./form/Step3Contact";
 import { Step4Review } from "./form/Step4Review";
 import { FormData, FormErrors } from "../types";
 import { createSubmission } from "../services/dataService";
-import {
-	sendSubmissionToWhatsApp,
-	isWhatsAppConfigured,
-} from "../services/whatsappService";
 
 interface SellFormProps {
 	isOpen: boolean;
@@ -38,6 +35,7 @@ const initialFormData: FormData = {
 };
 
 export function SellForm({ isOpen, onClose, onSuccess }: SellFormProps) {
+	const navigate = useNavigate();
 	const [currentStep, setCurrentStep] = useState(1);
 	const [formData, setFormData] = useState<FormData>(initialFormData);
 	const [errors, setErrors] = useState<FormErrors>({});
@@ -113,10 +111,6 @@ export function SellForm({ isOpen, onClose, onSuccess }: SellFormProps) {
 			newErrors.full_address = "Alamat lengkap wajib diisi";
 		}
 
-		if (!formData.location_lat || !formData.location_lng) {
-			newErrors.location = "Pin lokasi wajib diisi";
-		}
-
 		setErrors(newErrors);
 		return Object.keys(newErrors).length === 0;
 	};
@@ -144,6 +138,17 @@ export function SellForm({ isOpen, onClose, onSuccess }: SellFormProps) {
 		setIsSubmitting(true);
 
 		try {
+			// Convert File objects to base64 data URLs
+			const photoBase64: string[] = [];
+			for (const file of formData.photos) {
+				const base64 = await new Promise<string>((resolve) => {
+					const reader = new FileReader();
+					reader.onload = () => resolve(reader.result as string);
+					reader.readAsDataURL(file);
+				});
+				photoBase64.push(base64);
+			}
+
 			// Prepare submission data
 			const submissionData = {
 				category: formData.category as
@@ -160,7 +165,7 @@ export function SellForm({ isOpen, onClose, onSuccess }: SellFormProps) {
 					| "pecah",
 				functional_features: formData.functional_features,
 				accessories: formData.accessories,
-				photos: formData.photoUrls, // Store URLs instead of File objects
+				photos: photoBase64, // Base64 data URLs for Fonnte API
 				full_name: formData.full_name,
 				whatsapp: formData.whatsapp.replace(/\D/g, ""),
 				email: formData.email || undefined,
@@ -169,11 +174,14 @@ export function SellForm({ isOpen, onClose, onSuccess }: SellFormProps) {
 				location_lng: formData.location_lng ?? undefined,
 			};
 
-			// Save to localStorage first
+			// Generate ticket number and ID
 			const result = await createSubmission(submissionData);
-			console.log("Form submitted successfully:", result);
+			console.log(
+				"Form validated, ticket generated:",
+				result.ticket_number
+			);
 
-			// Get full submission with ticket number for WhatsApp
+			// Get full submission with ticket number
 			const fullSubmission = {
 				...submissionData,
 				id: result.id,
@@ -182,36 +190,25 @@ export function SellForm({ isOpen, onClose, onSuccess }: SellFormProps) {
 				created_at: new Date().toISOString(),
 			};
 
-			// Send to WhatsApp if configured
-			if (isWhatsAppConfigured()) {
-				try {
-					console.log("Sending submission to WhatsApp admin...");
-					// Pass actual File objects for photo upload
-					await sendSubmissionToWhatsApp(
-						fullSubmission,
-						formData.photos
-					);
-					console.log("Successfully sent to WhatsApp admin!");
-				} catch (whatsappError) {
-					console.error("WhatsApp send error:", whatsappError);
-					// Don't fail the submission if WhatsApp fails
-					// Just log the error
-				}
-			} else {
-				console.warn(
-					"WhatsApp service not configured. Skipping WhatsApp notification."
-				);
-			}
+			// Close form modal
+			onClose();
 
-			// Show success screen
-			onSuccess(result.ticket_number);
+			// Navigate to send page with submission data via state
+			// Note: fullSubmission.photos already contains base64 from photoUrls
+			navigate("/send/payloadwa", {
+				state: {
+					submission: fullSubmission,
+				},
+			});
+
+			// Reset form data
 			setFormData(initialFormData);
 			setCurrentStep(1);
 			setErrors({});
 		} catch (error) {
 			console.error("Submission error:", error);
 			alert(
-				"Ups, terjadi kesalahan saat mengirim data. Silakan coba lagi."
+				"Ups, terjadi kesalahan saat memproses data. Silakan coba lagi."
 			);
 		} finally {
 			setIsSubmitting(false);

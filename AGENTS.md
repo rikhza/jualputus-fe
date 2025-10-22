@@ -15,7 +15,7 @@ bun install
 cp .env.example .env
 # Edit .env with your Fonnte token and admin WhatsApp number
 
-# Start development server (ALWAYS use this during agent sessions)
+# Start development server (FE only)
 bun run dev
 # → http://localhost:3000
 
@@ -101,8 +101,8 @@ src/
 │   └── [Landing pages]  # Hero, FAQ, Features, etc.
 │
 ├── services/            # Business logic layer
-│   ├── dataService.ts   # All CRUD operations (localStorage)
-│   └── whatsappService.ts # WhatsApp API integration (Fonnte)
+│   ├── dataService.ts   # Ticket generation only (no storage)
+│   └── whatsappService.ts # Deprecated (use /api/whatsapp/send instead)
 │
 ├── data/               # Static data
 │   └── mockData.ts     # Brands, models, features, accessories
@@ -110,11 +110,14 @@ src/
 ├── types/              # TypeScript definitions
 │   └── index.ts        # All interfaces and types
 │
-└── lib/                # Utilities (currently empty)
+└── lib/                # Utilities
+
+api/                    # Vercel Serverless Functions
+└── whatsapp/
+    └── send.ts         # WhatsApp API integration (server-side)
 
 tests/                  # Playwright E2E tests
 scripts/                # Shell scripts (setup, test, build)
-docs/                   # Architecture documentation
 ```
 
 ---
@@ -159,10 +162,14 @@ docs/                   # Architecture documentation
     -   Holds all form data state
     -   Validation logic for each step
     -   Submission handler
--   `src/services/dataService.ts` - **CRITICAL**: Data operations
-    -   `createSubmission(data)` - Generate ticket number and ID
-    -   Auto-generates ticket numbers (format: `JP-DDMMHHMMSS`, timestamp-based, unique & memorable)
-    -   No local storage - data sent via WhatsApp service
+-   `src/services/dataService.ts` - **CRITICAL**: Ticket generation
+    -   `createSubmission(data)` - Generate ticket number and ID only
+    -   Auto-generates ticket numbers (format: `JP-DDMMHHMMSS`, timestamp-based)
+    -   No storage - data passed via React Router navigation state
+-   `api/whatsapp/send.ts` - **SERVER-SIDE**: WhatsApp API integration
+    -   Vercel Serverless Function
+    -   Handles Fonnte API calls with server-side credentials
+    -   Never exposes API tokens to client
 
 ### Type Definitions
 
@@ -333,10 +340,11 @@ test.describe("Feature Name", () => {
 
 ## Data Management
 
-### Submission Flow
+### Submission Flow (FE-only)
 
--   **No Storage**: Data tidak disimpan di localStorage/browser
--   **Direct to WhatsApp**: Form data langsung dikirim ke admin WhatsApp via Fonnte API
+-   **No Storage**: Data is NOT stored in localStorage/browser
+-   **Static Endpoint**: Form redirects to `/send/payloadwa` with data passed via React Router state
+-   **Direct WhatsApp Send**: `/send/payloadwa` calls `https://api.fonnte.com/send` from the client
 -   **Ticket Number**: Timestamp-based, globally unique, collision-resistant
 
 ### Ticket Number System
@@ -370,27 +378,36 @@ JP-170114304537  (dengan suffix 37)
 ### Available Operations
 
 ```typescript
-// Submission
+// Client-Side: Generate ticket number only
 createSubmission(data): Promise<{ id, ticket_number }>
 // Returns unique ID and timestamp-based ticket number
-// Data is sent to WhatsApp, not stored locally
+// Data is NOT stored - passed via navigation state
+
+// Server-Side: Send to WhatsApp
+POST /api/whatsapp/send
+// Body: Submission object with photos
+// Returns: { success: boolean, ticket_number: string }
 ```
 
 ### Data Flow Example
 
 ```typescript
-// 1. Form submission
-const result = await createSubmission({
-	category: "laptop",
-	brand: "ASUS",
-	model: "ROG Zephyrus G14",
-	year_released: 2024,
-	physical_condition: "mulus",
-	// ... other fields
+// 1. Form submission (SellForm.tsx)
+const result = await createSubmission(submissionData);
+
+// 2. Navigate to static send endpoint with data in state
+navigate("/send/payloadwa", {
+	state: {
+		submission: fullSubmission,
+		photoFiles: formData.photos,
+	},
 });
 
-// 2. Show success with ticket
-console.log(result.ticket_number); // "JP-1701143045" (17 Jan, 14:30:45)
+// 3. SendPage receives data and calls Fonnte API directly
+// → Client sends to Fonnte API
+// → Success screen shows ticket number
+
+console.log(result.ticket_number); // "JP-1701143045"
 ```
 
 ---
@@ -510,7 +527,7 @@ const applePhones = getModels("1"); // iPhone models
 
 ### createSubmission(data)
 
-Creates a new submission, generates ticket number, saves to localStorage.
+Generates ticket number and ID only. Does NOT save to localStorage.
 
 ```typescript
 const result = await createSubmission({
@@ -531,6 +548,7 @@ const result = await createSubmission({
 });
 
 // Returns: { id: 'sub_...', ticket_number: 'JP-1701143045' }
+// Note: Data is then passed to /send/payloadwa via navigation state
 ```
 
 ---
@@ -539,7 +557,7 @@ const result = await createSubmission({
 
 ### Before Deploy
 
-No cleanup needed! Data tidak disimpan di localStorage, jadi tidak ada data testing yang perlu dihapus.
+No cleanup needed! Data is NOT stored in localStorage or any client-side storage.
 
 ### Build for Production
 
@@ -577,33 +595,30 @@ gh-pages -d dist
 
 ---
 
-## Migration Path (Future Backend)
+## Architecture Overview
 
-When ready to add a backend:
+**Current Implementation:**
 
-1. **Keep service layer interface** - Don't change function signatures
-2. **Replace implementation** - Change localStorage to API calls
-3. **Add error handling** - Network errors, retries, loading states
-4. **Update types** - Add response types from API
-
-```typescript
-// Before (localStorage)
-export const createSubmission = async (data) => {
-	submissions.push(data);
-	localStorage.setItem("submissions", JSON.stringify(submissions));
-	return { id, ticket_number };
-};
-
-// After (API)
-export const createSubmission = async (data) => {
-	const response = await fetch("/api/submissions", {
-		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify(data),
-	});
-	return await response.json();
-};
 ```
+Form Submit → Generate Ticket → Navigate to /send/payloadwa (with state)
+                                        ↓
+                                  SendPage Component
+                                        ↓
+                            POST /api/whatsapp/send
+                                        ↓
+                            Vercel Serverless Function
+                                        ↓
+                                  Fonnte API
+                                        ↓
+                              Admin WhatsApp Notification
+```
+
+**Key Points:**
+
+-   No localStorage or client-side storage
+-   Data passed via React Router navigation state
+-   API credentials secured server-side
+-   Static endpoint: `/send/payloadwa`
 
 ---
 
