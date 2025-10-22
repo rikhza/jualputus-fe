@@ -13,7 +13,7 @@ import { createSubmission } from "../services/dataService";
 interface SellFormProps {
 	isOpen: boolean;
 	onClose: () => void;
-	onSuccess: (ticketNumber: string) => void;
+	onSuccess?: (ticketNumber: string) => void;
 }
 
 const initialFormData: FormData = {
@@ -34,7 +34,7 @@ const initialFormData: FormData = {
 	location_lng: null,
 };
 
-export function SellForm({ isOpen, onClose, onSuccess }: SellFormProps) {
+export function SellForm({ isOpen, onClose }: SellFormProps) {
 	const navigate = useNavigate();
 	const [currentStep, setCurrentStep] = useState(1);
 	const [formData, setFormData] = useState<FormData>(initialFormData);
