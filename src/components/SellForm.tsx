@@ -138,18 +138,7 @@ export function SellForm({ isOpen, onClose }: SellFormProps) {
 		setIsSubmitting(true);
 
 		try {
-			// Convert File objects to base64 data URLs
-			const photoBase64: string[] = [];
-			for (const file of formData.photos) {
-				const base64 = await new Promise<string>((resolve) => {
-					const reader = new FileReader();
-					reader.onload = () => resolve(reader.result as string);
-					reader.readAsDataURL(file);
-				});
-				photoBase64.push(base64);
-			}
-
-			// Prepare submission data
+			// Prepare submission data (WITHOUT photos in submission object)
 			const submissionData = {
 				category: formData.category as
 					| "hp_flagship"
@@ -165,7 +154,7 @@ export function SellForm({ isOpen, onClose }: SellFormProps) {
 					| "pecah",
 				functional_features: formData.functional_features,
 				accessories: formData.accessories,
-				photos: photoBase64, // Base64 data URLs for Fonnte API
+				photos: [], // Photos will be sent as File objects separately
 				full_name: formData.full_name,
 				whatsapp: formData.whatsapp.replace(/\D/g, ""),
 				email: formData.email || undefined,
@@ -176,10 +165,6 @@ export function SellForm({ isOpen, onClose }: SellFormProps) {
 
 			// Generate ticket number and ID
 			const result = await createSubmission(submissionData);
-			console.log(
-				"Form validated, ticket generated:",
-				result.ticket_number
-			);
 
 			// Get full submission with ticket number
 			const fullSubmission = {
@@ -193,12 +178,20 @@ export function SellForm({ isOpen, onClose }: SellFormProps) {
 			// Close form modal
 			onClose();
 
-			// Navigate to send page with submission data via state
-			// Note: fullSubmission.photos already contains base64 from photoUrls
+			// Navigate to send page with submission data AND File objects via state
+			// Add timestamp to force new navigation state and prevent cache
 			navigate("/send/payloadwa", {
 				state: {
 					submission: fullSubmission,
+					photoFiles: formData.photos, // Pass actual File objects
+					timestamp: Date.now(), // Force unique state on each submit
 				},
+				replace: false, // Create new history entry
+			});
+
+			// Revoke all Object URLs to free memory
+			formData.photoUrls.forEach((url) => {
+				URL.revokeObjectURL(url);
 			});
 
 			// Reset form data

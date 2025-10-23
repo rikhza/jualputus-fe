@@ -20,10 +20,17 @@ export function SendPage() {
 		const sendSubmission = async () => {
 			try {
 				// Get submission data from navigation state
-				const { submission } = location.state || {};
+				// timestamp is used in useEffect dependency to detect new submissions
+				const { submission, photoFiles, timestamp } =
+					location.state || {};
+				void timestamp; // Mark as intentionally unused in function body
 
 				if (!submission || !submission.ticket_number) {
 					throw new Error("No submission data provided");
+				}
+
+				if (!photoFiles || photoFiles.length === 0) {
+					throw new Error("No photo files provided");
 				}
 
 				// Send to Fonnte API directly (frontend-only)
@@ -53,19 +60,15 @@ export function SendPage() {
 				if (!msgRes.ok)
 					throw new Error(`Fonnte message failed: ${msgRes.status}`);
 
-				// 2) Send photos using multipart/form-data (Fonnte requirement)
-				if (submission.photos?.length) {
-					for (let i = 0; i < submission.photos.length; i++) {
-						const base64Data = submission.photos[i];
+				// 2) Send photos directly as File objects (Fonnte requirement)
+				if (photoFiles?.length) {
+					for (let i = 0; i < photoFiles.length; i++) {
+						const file = photoFiles[i];
 
-						// Convert base64 to Blob
-						const base64Response = await fetch(base64Data);
-						const blob = await base64Response.blob();
-
-						// Create FormData for multipart upload
+						// Create FormData for multipart upload with actual File object
 						const formData = new FormData();
 						formData.append("target", adminWa);
-						formData.append("file", blob, `foto-${i + 1}.jpg`);
+						formData.append("file", file, file.name); // Send actual File object
 						formData.append(
 							"caption",
 							`Foto ${i + 1} - ${submission.ticket_number}`
@@ -79,7 +82,7 @@ export function SendPage() {
 								headers: {
 									Authorization: token,
 								},
-								body: formData, // multipart/form-data
+								body: formData, // multipart/form-data with File
 							}
 						);
 
@@ -87,8 +90,6 @@ export function SendPage() {
 							console.warn("Failed to send photo", i + 1);
 							const errText = await photoRes.text();
 							console.error("Photo error:", errText);
-						} else {
-							console.log(`✅ Photo ${i + 1} sent successfully`);
 						}
 					}
 				}
@@ -110,7 +111,7 @@ export function SendPage() {
 		};
 
 		sendSubmission();
-	}, [location.state, navigate]);
+	}, [location.state?.timestamp, navigate]); // Use timestamp to detect new submissions
 
 	return (
 		<div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">

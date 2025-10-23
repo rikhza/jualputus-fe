@@ -136,6 +136,12 @@ export function Step2Condition({
 	const removePhoto = (index: number) => {
 		const newPhotos = formData.photos.filter((_, i) => i !== index);
 		const newUrls = formData.photoUrls.filter((_, i) => i !== index);
+
+		// Revoke old Object URL to free memory
+		if (formData.photoUrls[index]) {
+			URL.revokeObjectURL(formData.photoUrls[index]);
+		}
+
 		onChange("photos", newPhotos);
 		onChange("photoUrls", newUrls);
 	};
