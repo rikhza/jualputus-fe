@@ -10,31 +10,21 @@ import { Footer } from "./components/Footer";
 import { FloatingCTA } from "./components/FloatingCTA";
 
 // Lazy load heavy components that are not immediately visible
-const SellForm = lazy(() => import("./components/SellForm"));
+// const SellForm = lazy(() => import("./components/SellForm"));
 const SuccessScreen = lazy(() => import("./components/SuccessScreen"));
 const SendPage = lazy(() => import("./components/SendPage"));
 const SuksesPage = lazy(() => import("./components/SuksesPage"));
 const NotFoundPage = lazy(() => import("./components/NotFoundPage"));
 
 function App() {
-	const [isFormOpen, setIsFormOpen] = useState(false);
 	const [isSuccessOpen, setIsSuccessOpen] = useState(false);
 	const [ticketNumber, setTicketNumber] = useState("");
 
 	const handleOpenForm = () => {
-		setIsFormOpen(true);
-		document.body.style.overflow = "hidden";
-	};
-
-	const handleCloseForm = () => {
-		setIsFormOpen(false);
-		document.body.style.overflow = "auto";
-	};
-
-	const handleFormSuccess = (ticket: string) => {
-		setTicketNumber(ticket);
-		setIsFormOpen(false);
-		setIsSuccessOpen(true);
+		window.open(
+			"https://wa.me/87881129916?text=Hallo%20kak%2C%20Saya%20ingin%20menjual%20perangkat%20second%20saya%20boleh%20dibantu%20proses%20penjualan.%20Terimakasih",
+			"_blank"
+		);
 	};
 
 	const handleCloseSuccess = () => {
@@ -82,13 +72,14 @@ function App() {
 							<Footer />
 							<FloatingCTA onClick={handleOpenForm} />
 
-							{isFormOpen && (
+							{/* Form temporarily disabled - redirects to WhatsApp */}
+							{/* {isFormOpen && (
 								<SellForm
 									isOpen={isFormOpen}
 									onClose={handleCloseForm}
 									onSuccess={handleFormSuccess}
 								/>
-							)}
+							)} */}
 
 							{isSuccessOpen && (
 								<SuccessScreen
