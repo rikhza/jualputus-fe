@@ -18,7 +18,7 @@ const NotFoundPage = lazy(() => import("./components/NotFoundPage"));
 
 function App() {
 	const [isSuccessOpen, setIsSuccessOpen] = useState(false);
-	const [ticketNumber, setTicketNumber] = useState("");
+	// ticketNumber state removed - form is temporarily disabled
 
 	const handleOpenForm = () => {
 		window.open(
@@ -83,7 +83,7 @@ function App() {
 
 							{isSuccessOpen && (
 								<SuccessScreen
-									ticketNumber={ticketNumber}
+									ticketNumber="" // Placeholder - form is disabled
 									onClose={handleCloseSuccess}
 								/>
 							)}
