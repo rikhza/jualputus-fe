@@ -21,10 +21,8 @@ function App() {
 	// ticketNumber state removed - form is temporarily disabled
 
 	const handleOpenForm = () => {
-		window.open(
-			"https://wa.me/87881129916?text=Hallo%20kak%2C%20Saya%20ingin%20menjual%20perangkat%20second%20saya%20boleh%20dibantu%20proses%20penjualan.%20Terimakasih",
-			"_blank"
-		);
+		window.location.href =
+			"https://wa.me/+6287881129916?text=Hallo%20kak%2C%20Saya%20ingin%20menjual%20perangkat%20second%20saya%20boleh%20dibantu%20proses%20penjualan.%20Terimakasih";
 	};
 
 	const handleCloseSuccess = () => {
